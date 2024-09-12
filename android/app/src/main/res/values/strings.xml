@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">serial</string>
+    <string name="title_activity_main">serial</string>
+    <string name="package_name">com.cling.serial</string>
+    <string name="custom_url_scheme">com.cling.serial</string>
+</resources>
