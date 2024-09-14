@@ -2,17 +2,14 @@
 
 import useModbus from '@/hooks/useModbus'
 import {Button} from '../ui/button'
-// import {ButtonClick} from '@/actions/arduino'
 
 function ArduinoButton() {
-  const {client} = useModbus()
+  const {client, node} = useModbus()
 
   const handleClick = async () => {
-    // await ButtonClick()
     console.log('Button Click!')
-    await client?.writeCoil(1, true)
-    await client?.delay(300)
-    await client?.writeCoil(1, false)
+    const btn = node?.button('button')
+    await btn?.click()
   }
 
   return (

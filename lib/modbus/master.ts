@@ -10,6 +10,9 @@ import * as packetUtils from './packet-utils'
 import SerialPort from './SerialPort'
 import {SerialConnectionParameters} from '@adeunis/capacitor-serial'
 import $eventBus from '../eventbus'
+import {getDefaultStore} from 'jotai'
+import {Store} from '@/components/provider/JotaiProvider'
+import {LBIT_ATOM, LWORD_ATOM} from '@/atom/modbus'
 
 export type ModbusMasterOptions = {
   responseTimeout: number
@@ -24,6 +27,7 @@ export class ModbusMaster {
   logger: Logger
   _lockPollCoils = false
   _lockPollRegisters = false
+  _store: Store
 
   constructor(serialPort: SerialPort, options?: ModbusMasterOptions) {
     // this.serial = serialPort
@@ -41,6 +45,7 @@ export class ModbusMaster {
     )
     this.logger = new Logger(this._options)
     this.serial = SerialHelperFactory.create(serialPort, this._options)
+    this._store = getDefaultStore()
   }
 
   /**
@@ -202,6 +207,7 @@ export class ModbusMaster {
 
     this.readCoils(address, length)
       .then((data) => {
+        this._store.set(LBIT_ATOM, data)
         $eventBus.trigger('LBIT', data)
       })
       .finally(() => {
@@ -228,6 +234,7 @@ export class ModbusMaster {
 
     this.readHoldingRegisters(address, length, dataType)
       .then((data) => {
+        this._store.set(LWORD_ATOM, data)
         $eventBus.trigger('LWORD', data)
       })
       .finally(() => {

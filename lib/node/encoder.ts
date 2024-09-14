@@ -1,17 +1,23 @@
+import {getDefaultStore} from 'jotai'
+import {ModbusMaster} from '../modbus'
 import Device from './device'
+import {LWORD_ATOM} from '@/atom/modbus'
 
 class Encoder extends Device {
-  constructor(name: string, index: number) {
-    super(name, index)
+  constructor(client: ModbusMaster, name: string, index: number) {
+    super(client, name, index)
   }
 
   get value() {
-    // return LWORD[this._index]
-    return 0
+    const store = getDefaultStore()
+    const LWORD = store.get(LWORD_ATOM)
+    return LWORD[this._index]
   }
 
   set value(value: number) {
-    // client?.writeRegister(this._index, value)
+    try {
+      this._client.writeRegister(this._index, value)
+    } catch (error) {}
   }
 }
 

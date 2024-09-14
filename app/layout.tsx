@@ -4,6 +4,7 @@ import './globals.css'
 import {ThemeProvider} from 'next-themes'
 import {Toaster} from '@/components/ui/toaster'
 import ModbusContextProvider from '@/lib/modbus/ModbusContext'
+import JotaiProvider from '@/components/provider/JotaiProvider'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -29,12 +30,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ModbusContextProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <div className=" mx-auto">{children}</div>
-            <Toaster />
-          </ThemeProvider>
-        </ModbusContextProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <JotaiProvider>
+            <ModbusContextProvider>
+              <div className=" mx-auto">{children}</div>
+              <Toaster />
+            </ModbusContextProvider>
+          </JotaiProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
