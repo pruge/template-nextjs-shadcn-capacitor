@@ -62,7 +62,7 @@ class SerialPort extends EventEmitter {
   }
 
   registerReadCallback() {
-    $eventBus.trigger('state', JSON.stringify('register read callback'))
+    // $eventBus.trigger('state', JSON.stringify('register read callback'))
     Serial.registerReadRawCallback((message, error) => {
       if (message) {
         this.emit('data', Buffer.from(message.data, 'base64'))

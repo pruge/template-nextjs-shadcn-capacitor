@@ -11,6 +11,8 @@ type ModbusContextType = {
   message: string
 }
 
+export type MemoryType = 'COIL' | 'INPUT' | 'HOLDING' | 'INPUT_REGISTER'
+
 export const ModbusContext = createContext<ModbusContextType | null>(null)
 
 export default function ModbusContextProvider({children}: {children: React.ReactNode}) {
@@ -20,7 +22,8 @@ export default function ModbusContextProvider({children}: {children: React.React
 
   useEffectOnce(() => {
     ;(async () => {
-      const serial = new SerialPort({baudRate: 57600 /* , rts: true, dtr: true */})
+      // const serial = new SerialPort({baudRate: 57600, rts: true, dtr: true})
+      const serial = new SerialPort({baudRate: 38400, rts: true, dtr: true})
       const client = new ModbusMaster(serial)
 
       await serial.open()

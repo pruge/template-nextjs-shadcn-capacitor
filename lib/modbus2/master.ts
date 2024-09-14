@@ -9,6 +9,7 @@ import {ModbusRetryLimitExceed, ModbusCrcError} from './errors'
 import * as packetUtils from './packet-utils'
 import SerialPort from './SerialPort'
 import {SerialConnectionParameters} from '@adeunis/capacitor-serial'
+import $eventBus from '../eventbus'
 
 export type ModbusMasterOptions = {
   responseTimeout: number
@@ -21,6 +22,7 @@ export class ModbusMaster {
   _options: ModbusMasterOptions
   _unitID: number = 0
   logger: Logger
+  _flgPollingCoils = false
 
   constructor(serialPort: SerialPort, options?: ModbusMasterOptions) {
     // this.serial = serialPort
@@ -73,6 +75,25 @@ export class ModbusMaster {
       })
     }
     return performRequest(retryCount)
+  }
+
+  /**
+   * Modbus function read coils
+   * @param {number} address
+   * @param {number} length
+   * @param {number} [retryCount]
+   * @returns {Promise<number[]>}
+   */
+  async readCoils(address: number, length: number): Promise<number[]> {
+    const packet = this.createFixedPacket(this._unitID, FUNCTION_CODES.READ_COILS, address, length)
+    // $eventBus.trigger('data', packet)
+
+    return this.request(packet).then((buffer) => {
+      const buf = packetUtils.getDataBuffer(buffer)
+      $eventBus.trigger('data', buf)
+
+      return packetUtils.parseFc01Packet(buf, length)
+    })
   }
 
   /**
@@ -147,6 +168,32 @@ export class ModbusMaster {
   // }
 
   /**
+   * Modbus polling coils
+   * @param {number} address
+   * @param {number} length
+   * @param {number} polling
+   */
+  pollCoils(address: number, length: number, polling: number = 500) {
+    $eventBus.trigger('state', 'polling: ' + polling)
+    if (this._flgPollingCoils) {
+      return
+    }
+
+    this._flgPollingCoils = true
+
+    this.readCoils(address, length)
+      .then((data) => {
+        $eventBus.trigger('LBIT', data)
+      })
+      .finally(() => {
+        setTimeout(() => {
+          this._flgPollingCoils = false
+          this.pollCoils(address, length, polling)
+        }, polling)
+      })
+  }
+
+  /**
    * Create modbus packet with fixed length
    * @private
    * @param {number} slave
@@ -169,9 +216,9 @@ export class ModbusMaster {
         break
 
       default:
+        buf.word16be(param).word16be(param2).buffer()
         break
     }
-    // return new BufferPut().word8be(slave).word8be(func).word16be(param).word16be(param2).buffer()
     return buf.buffer()
   }
 

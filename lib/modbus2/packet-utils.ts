@@ -1,7 +1,7 @@
 import crc from 'crc'
 import BufferPut from 'bufferput'
 
-export type DATA_TYPES = 'INT' | 'UINT' | 'ASCII'
+export type DATA_TYPES = 'INT' | 'UINT'
 
 /**
  * Slice header, bytes count and crc. Return buffer only with data
@@ -9,6 +9,24 @@ export type DATA_TYPES = 'INT' | 'UINT' | 'ASCII'
  */
 export function getDataBuffer(buffer: Buffer) {
   return buffer.slice(3, buffer.length - 2)
+}
+
+/**
+ * Parse function 01 response packet (read coils)
+ * @param {Buffer} buffer
+ * @param {number} length
+ * @returns {number[]}
+ */
+export function parseFc01Packet(buffer: Buffer, length: number) {
+  const results = []
+
+  let idx
+  for (let i = 0; i < length; i++) {
+    idx = i / 8
+    results.push((buffer[idx] >> i % 8) & 1)
+  }
+
+  return results
 }
 
 /**
@@ -57,8 +75,6 @@ function readDataFromBuffer(buffer: Buffer, offset: number, dataType: DATA_TYPES
   switch (dataType) {
     case 'UINT':
       return buffer.readUInt16BE(offset)
-    case 'ASCII':
-      return buffer.toString('ascii', offset, offset + 2)
     default:
       return buffer.readInt16BE(offset)
   }
