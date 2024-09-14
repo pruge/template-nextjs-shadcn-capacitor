@@ -1,0 +1,6 @@
+import SerialTest from '@/components/SerialTest'
+import Image from 'next/image'
+
+export default function Home() {
+  return <SerialTest />
+}
