@@ -22,7 +22,8 @@ export class ModbusMaster {
   _options: ModbusMasterOptions
   _unitID: number = 0
   logger: Logger
-  _flgPollingCoils = false
+  _lockPollCoils = false
+  _lockPollRegisters = false
 
   constructor(serialPort: SerialPort, options?: ModbusMasterOptions) {
     // this.serial = serialPort
@@ -43,7 +44,26 @@ export class ModbusMaster {
   }
 
   /**
-   * Modbus function write single coil
+   * Modbus function: 1, read coils
+   * @param {number} address
+   * @param {number} length
+   * @param {number} [retryCount]
+   * @returns {Promise<number[]>}
+   */
+  async readCoils(address: number, length: number): Promise<number[]> {
+    const packet = this.createFixedPacket(this._unitID, FUNCTION_CODES.READ_COILS, address, length)
+    // $eventBus.trigger('data', packet)
+
+    return this.request(packet).then((buffer) => {
+      const buf = packetUtils.getDataBuffer(buffer)
+      // $eventBus.trigger('data', buf)
+
+      return packetUtils.parseFc01Packet(buf, length)
+    })
+  }
+
+  /**
+   * Modbus function: 5, write single coil
    * @param {number} address
    * @param {boolean} value
    * @param {number} [retryCount]
@@ -57,6 +77,95 @@ export class ModbusMaster {
         const funcName = 'writeSingleCoil: '
         const funcId =
           `Slave ${this._unitID}; Address: ${address}; Value: ${value ? 'true' : 'false'};` +
+          `Retry ${retryCount - retry} of ${retryCount}`
+
+        if (retry < 0) {
+          throw new ModbusRetryLimitExceed(funcId)
+        }
+
+        this.logger.info(funcName + 'perform request.' + funcId)
+
+        this.request(packet)
+          .then(resolve)
+          .catch((err) => {
+            this.logger.info(funcName + err + funcId)
+
+            return performRequest(--retry).then(resolve).catch(reject)
+          })
+      })
+    }
+    return performRequest(retryCount)
+  }
+
+  /**
+   * Modbus function: 3, read holding registers
+   * @param {number} address
+   * @param {number} length
+   * @param {number | function} [dataType] value from DATA_TYPES const or callback
+   * @returns {Promise<number[]>}
+   */
+  readHoldingRegisters(address: number, length: number, dataType: packetUtils.DATA_TYPES) {
+    const packet = this.createFixedPacket(this._unitID, FUNCTION_CODES.READ_HOLDING_REGISTERS, address, length)
+
+    return this.request(packet).then((buffer) => {
+      const buf = packetUtils.getDataBuffer(buffer)
+      $eventBus.trigger('data', buf)
+
+      return packetUtils.parseFc03Packet(buf, dataType)
+    })
+  }
+
+  /**
+   * Modbus function: 6,  write single register
+   * @param {number} address
+   * @param {number} value
+   * @param {number} [retryCount]
+   */
+  writeRegister(address: number, value: number, retryCount?: number) {
+    const packet = this.createFixedPacket(this._unitID, FUNCTION_CODES.WRITE_SINGLE_REGISTER, address, value)
+    retryCount = retryCount ?? this._options.retryCount
+
+    const performRequest = (retry: number) => {
+      return new Promise((resolve, reject) => {
+        const funcName = 'writeSingleRegister: '
+        const funcId =
+          `Slave ${this._unitID}; Address: ${address}; Value: ${value};` +
+          `Retry ${retryCount - retry} of ${retryCount}`
+
+        if (retry < 0) {
+          throw new ModbusRetryLimitExceed(funcId)
+        }
+
+        this.logger.info(funcName + 'perform request.' + funcId)
+
+        this.request(packet)
+          .then(resolve)
+          .catch((err) => {
+            this.logger.info(funcName + err + funcId)
+
+            return performRequest(--retry).then(resolve).catch(reject)
+          })
+      })
+    }
+    return performRequest(retryCount)
+  }
+
+  /**
+   * Modbus function: 16, write multiple registers
+   * @param {number} address
+   * @param {number[]} array
+   * @param {number} [retryCount]
+   */
+  writeRegisters(address: number, array: number[], retryCount?: number) {
+    const packet = this.createVariousPacket(this._unitID, FUNCTION_CODES.WRITE_MULTIPLE_REGISTERS, address, array)
+
+    retryCount = retryCount ?? this._options.retryCount
+
+    const performRequest = (retry: number) => {
+      return new Promise((resolve, reject) => {
+        const funcName = 'writeMultipleRegisters: '
+        const funcId =
+          `Slave ${this._unitID}; Address: ${address}; Value: ${array.toString()};` +
           `Retry ${retryCount + 1 - retry} of ${retryCount}`
 
         if (retry < 0) {
@@ -78,108 +187,18 @@ export class ModbusMaster {
   }
 
   /**
-   * Modbus function read coils
-   * @param {number} address
-   * @param {number} length
-   * @param {number} [retryCount]
-   * @returns {Promise<number[]>}
-   */
-  async readCoils(address: number, length: number): Promise<number[]> {
-    const packet = this.createFixedPacket(this._unitID, FUNCTION_CODES.READ_COILS, address, length)
-    // $eventBus.trigger('data', packet)
-
-    return this.request(packet).then((buffer) => {
-      const buf = packetUtils.getDataBuffer(buffer)
-      $eventBus.trigger('data', buf)
-
-      return packetUtils.parseFc01Packet(buf, length)
-    })
-  }
-
-  /**
-   * Modbus function read holding registers
-   * @param {number} slave
-   * @param {number} start
-   * @param {number} length
-   * @param {number | function} [dataType] value from DATA_TYPES const or callback
-   * @returns {Promise<number[]>}
-   */
-  // readHoldingRegisters(slave, start, length, dataType) {
-  //     const packet = this.createFixedPacket(slave, FUNCTION_CODES.READ_HOLDING_REGISTERS, start, length);
-
-  //     return this.request(packet).then((buffer) => {
-  //         const buf = packetUtils.getDataBuffer(buffer);
-
-  //         if (typeof (dataType) === 'function') {
-  //             return dataType(buf);
-  //         }
-
-  //         return packetUtils.parseFc03Packet(buf, dataType);
-  //     });
-  // }
-
-  /**
-   *
-   * @param {number} slave
-   * @param {number} register
-   * @param {number} value
-   * @param {number} [retryCount]
-   */
-  // writeSingleRegister(slave, register, value, retryCount) {
-  //     const packet = this.createFixedPacket(slave, FUNCTION_CODES.WRITE_SINGLE_REGISTER, register, value);
-  //     retryCount = retryCount || DEFAULT_RETRY_COUNT;
-
-  //     const performRequest = (retry) => {
-  //         return new Promise((resolve, reject) => {
-  //             const funcName = 'writeSingleRegister: ';
-  //             const funcId =
-  //                 `Slave ${slave}; Register: ${register}; Value: ${value};` +
-  //                 `Retry ${retryCount + 1 - retry} of ${retryCount}`;
-
-  //             if (retry <= 0) {
-  //                 throw new ModbusRetryLimitExceed(funcId);
-  //             }
-
-  //             this.logger.info(funcName + 'perform request.' + funcId);
-
-  //             this.request(packet)
-  //                 .then(resolve)
-  //                 .catch((err) => {
-  //                     this.logger.info(funcName + err + funcId);
-
-  //                     return performRequest(--retry)
-  //                         .then(resolve)
-  //                         .catch(reject);
-  //                 });
-  //         });
-  //     };
-  //     return performRequest(retryCount);
-  // }
-
-  /**
-   *
-   * @param {number} slave
-   * @param {number} start
-   * @param {number[]} array
-   */
-  // writeMultipleRegisters(slave, start, array) {
-  //     const packet = this.createVariousPacket(slave, FUNCTION_CODES.WRITE_MULTIPLE_REGISTERS, start, array);
-  //     return this.request(packet);
-  // }
-
-  /**
    * Modbus polling coils
    * @param {number} address
    * @param {number} length
    * @param {number} polling
    */
   pollCoils(address: number, length: number, polling: number = 500) {
-    $eventBus.trigger('state', 'polling: ' + polling)
-    if (this._flgPollingCoils) {
+    $eventBus.trigger('state', 'coil polling: ' + polling)
+    if (this._lockPollCoils) {
       return
     }
 
-    this._flgPollingCoils = true
+    this._lockPollCoils = true
 
     this.readCoils(address, length)
       .then((data) => {
@@ -187,8 +206,34 @@ export class ModbusMaster {
       })
       .finally(() => {
         setTimeout(() => {
-          this._flgPollingCoils = false
+          this._lockPollCoils = false
           this.pollCoils(address, length, polling)
+        }, polling)
+      })
+  }
+
+  /**
+   * Modbus polling coils
+   * @param {number} address
+   * @param {number} length
+   * @param {number} polling
+   */
+  pollRegisters(address: number, length: number, dataType: packetUtils.DATA_TYPES = 'INT', polling: number = 500) {
+    $eventBus.trigger('state', 'register polling: ' + polling)
+    if (this._lockPollRegisters) {
+      return
+    }
+
+    this._lockPollRegisters = true
+
+    this.readHoldingRegisters(address, length, dataType)
+      .then((data) => {
+        $eventBus.trigger('LWORD', data)
+      })
+      .finally(() => {
+        setTimeout(() => {
+          this._lockPollRegisters = false
+          this.pollRegisters(address, length, dataType, polling)
         }, polling)
       })
   }
