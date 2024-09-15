@@ -7,8 +7,6 @@ import Sensor from './sensor'
 import Switch2 from './switch2'
 import Variable from './variable'
 
-// let node: Node
-
 export class Node {
   _coilCount: number = 0
   _registerCount: number = 0
@@ -129,47 +127,11 @@ export class Node {
     }
   }
 
-  get coilCount() {
-    return this._coilCount
-  }
-
-  get registerCount() {
-    return this._registerCount
-  }
-
   start(polling: number) {
-    // this._client.pollCoils(0, this._coilCount, polling)
+    this._client.pollCoils(0, this._coilCount, polling)
     this._client.pollRegisters(0, this._registerCount, 'INT', polling)
   }
 }
-
-// if (process.env.NODE_ENV === 'production') {
-//   node = new Node()
-// } else {
-//   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//   //@ts-expect-error
-//   if (!global.node) {
-//     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//     //@ts-expect-error
-//     global.node = new Node()
-//   }
-//   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//   //@ts-expect-error
-//   node = global.node
-// }
-
-// node
-//   .output('active led', 13)
-//   .button('button', 0, 0)
-//   .switch2('switch', 0, 1)
-//   .sensor('sensor', 0, 2)
-//   .output('bulb A', 0, 0)
-//   .output('run led', 22)
-//   .encoder('encoder', 2, 5)
-//   .variable('val')
-//   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//   // @ts-expect-error
-//   .start(500)
 
 export function nodeInitialize(node: Node) {
   node
@@ -183,7 +145,7 @@ export function nodeInitialize(node: Node) {
     .variable('val')
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
-    .start(500)
+    .start(1000)
 }
 
 // export default node
