@@ -13,7 +13,7 @@ function ArduinoButton() {
   }
 
   return (
-    <Button className="w-[200px] h-[200px]" onClick={handleClick}>
+    <Button className="w-32 h-32" onClick={handleClick}>
       button
     </Button>
   )

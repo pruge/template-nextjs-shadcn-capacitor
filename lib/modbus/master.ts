@@ -8,7 +8,6 @@ import {FUNCTION_CODES, RESPONSE_TIMEOUT, QUEUE_TIMEOUT, DEFAULT_RETRY_COUNT} fr
 import {ModbusRetryLimitExceed, ModbusCrcError} from './errors'
 import * as packetUtils from './packet-utils'
 import SerialPort from './SerialPort'
-import {SerialConnectionParameters} from '@adeunis/capacitor-serial'
 import $eventBus from '../eventbus'
 import {getDefaultStore} from 'jotai'
 import {Store} from '@/components/provider/JotaiProvider'
@@ -209,6 +208,7 @@ export class ModbusMaster {
       .then((data) => {
         this._store.set(LBIT_ATOM, data)
         $eventBus.trigger('LBIT', data)
+        $eventBus.trigger('data', data)
       })
       .finally(() => {
         setTimeout(() => {

@@ -115,7 +115,7 @@ export class Node {
   }
 
   // ==== register ====
-  variable(name: string): Node | Variable {
+  variable(name: string): Variable {
     const device = this.LWORD.get(name)
     if (device !== undefined) {
       return device as Variable
@@ -123,6 +123,8 @@ export class Node {
       const device = new Variable(this._client, name, this._registerCount)
       this.LWORD.set(name, device)
       this._registerCount++
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       return this
     }
   }
@@ -136,7 +138,7 @@ export class Node {
   }
 
   start(polling: number) {
-    this._client.pollCoils(0, this._coilCount, polling)
+    // this._client.pollCoils(0, this._coilCount, polling)
     this._client.pollRegisters(0, this._registerCount, 'INT', polling)
   }
 }

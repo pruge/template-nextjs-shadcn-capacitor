@@ -3,8 +3,8 @@ import localFont from 'next/font/local'
 import './globals.css'
 import {ThemeProvider} from 'next-themes'
 import {Toaster} from '@/components/ui/toaster'
-import ModbusContextProvider from '@/lib/modbus/ModbusContext'
 import JotaiProvider from '@/components/provider/JotaiProvider'
+import ModbusContextProvider from '@/lib/modbus/ModbusContext'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -33,7 +33,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <JotaiProvider>
             <ModbusContextProvider>
-              <div className=" mx-auto">{children}</div>
+              <div className="max-w-max mx-auto">{children}</div>
               <Toaster />
             </ModbusContextProvider>
           </JotaiProvider>

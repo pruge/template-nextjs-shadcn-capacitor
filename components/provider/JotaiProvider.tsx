@@ -1,3 +1,5 @@
+'use client'
+
 import React, {ReactNode} from 'react'
 import {createStore, Provider} from 'jotai'
 const store = createStore()
